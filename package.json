@@ -1,0 +1,25 @@
+{
+  "name": "zinc",
+  "version": "1.0.0",
+  "description": "This is a zinc command line",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shubham1888/zinc.git"
+  },
+  "keywords": [
+    "zn"
+  ],
+  "author": "shubham shah",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shubham1888/zinc/issues"
+  },
+  "homepage": "https://github.com/shubham1888/zinc#readme",
+  "dependencies": {
+    "chalk": "^5.0.1"
+  }
+}
