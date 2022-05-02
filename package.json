@@ -1,0 +1,32 @@
+{
+  "name": "@dark-world/zinc",
+  "version": "1.2.0",
+  "description": "A simple zinc cli for shubham by shubham.",
+  "main": "index.js",
+  "scripts": {
+    "test": "zinc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shubham1888/zinc.git"
+  },
+  "keywords": [
+    "shubham",
+    "zinc",
+    "cli"
+  ],
+  "author": "shubham shah",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shubham1888/zinc/issues"
+  },
+  "homepage": "https://github.com/shubham1888/zinc#readme",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "colors": "^1.4.0",
+    "commander": "^9.2.0",
+    "inquirer": "^8.2.4",
+    "mongoose": "^6.3.1",
+    "validator": "^13.7.0"
+  }
+}

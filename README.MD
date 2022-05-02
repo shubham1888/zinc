@@ -1,0 +1,1 @@
+A simple zinc cli for shubham by shubham for shubham.
