@@ -58,29 +58,57 @@ const connection = () => {
     .catch((err) => console.log(`${err}`.red));
 };
 
-const createDocument = (data) => {
-  const myData = new mySchemaData({ data, date: currentDateTime });
-  myData
-    .save()
-    .then(() => {
-      console.log("Data saved successfully".green);
-    })
-    .catch((err) => {
-      console.log(`${err}`.red);
+const createDocument = () => {
+  inquirer
+    .prompt([
+      {
+        name: "data",
+        message: "[Data] # ",
+      },
+    ])
+    .then((answers) => {
+      let data = answers.data;
+      const myData = new mySchemaData({ data, date: currentDateTime });
+      myData
+        .save()
+        .then(() => {
+          console.log("Data saved successfully".green);
+        })
+        .catch((err) => {
+          console.log(`${err}`.red);
+        });
     });
 };
 
-const updateDocument = () => {};
-
-const readDocument = async () => {
-  const myData = await mongoose.get();
-  console.log(`${myData}`.yellow);
+const updateDocument = (data) => {
+  inquirer
+    .prompt([
+      {
+        name: "data",
+        message: "[New Data] # ",
+      },
+    ])
+    .then(async(answers) => {
+      const myData = await mySchemaData.findByIdAndUpdate(data,{data:answers.data});
+      console.log(`${myData}`.yellow);
+      console.log("Data updated".yellow);
+    });
 };
 
-const deleteDocument = () => {};
+const readDocument = async () => {
+  const myData = await mySchemaData.find();
+  console.log(`${myData}`.yellow);
+  console.log(`[${myData.length}] results found`.green);
+};
+
+const deleteDocument = async (data) => {
+  const myData = await mySchemaData.findByIdAndDelete(data);
+  console.log(`${myData}`.yellow);
+  console.log("Data deleted".yellow);
+};
 
 program
-  .name("Shubham-cli[zinc]")
+  .name("index.js i | u | g | d | ")
   .description("CLI to store data")
   .version("1.1.0");
 
@@ -94,23 +122,23 @@ program
 program
   .command("i")
   .description("Insert data to the server.")
-  .argument("<string>", "string to split")
-  .action((str) => {
+  .action(() => {
     connection();
-    createDocument(str);
+    createDocument();
   });
 
 program
   .command("u")
   .description("Insert data to the server.")
-  .action(() => {
+  .argument("<string>", "string of id")
+  .action((str) => {
     connection();
-    updateDocument();
+    updateDocument(str);
   });
 
 program
   .command("g")
-  .description("Insert data to the server.")
+  .description("Get data from the server.")
   .action(() => {
     connection();
     readDocument();
@@ -119,9 +147,10 @@ program
 program
   .command("d")
   .description("Delete data to the server.")
-  .action(() => {
+  .argument("<string>", "string of id")
+  .action((str) => {
     connection();
-    deleteDocument();
+    deleteDocument(str);
   });
 
 program
