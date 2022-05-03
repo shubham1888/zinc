@@ -1,8 +1,10 @@
 {
   "name": "@dark-world/zinc",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A simple zinc cli for shubham by shubham.",
   "main": "index.js",
+  "preferGlobal": true,
+  "bin": "./index.js",
   "scripts": {
     "test": "zinc"
   },
@@ -26,7 +28,6 @@
     "colors": "^1.4.0",
     "commander": "^9.2.0",
     "inquirer": "^8.2.4",
-    "mongoose": "^6.3.1",
-    "validator": "^13.7.0"
+    "mongoose": "^6.3.1"
   }
 }

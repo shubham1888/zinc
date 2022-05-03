@@ -34,6 +34,10 @@ const quoteFunc = () => {
     .then((res) => {
       const quote = res.data.contents.quotes[0].quote;
       const author = res.data.contents.quotes[0].author;
+      const title = res.data.contents.quotes[0].title;
+      const category = res.data.contents.quotes[0].category;
+      console.log(`Title - ${title}`.green);
+      console.log(`Category - ${category}`.green);
       const log = console.log(`${quote} - ${author}`.yellow);
       console.log(log);
     })
@@ -55,7 +59,10 @@ const connection = () => {
     .then(() => {
       console.log("Connnection successful".yellow);
     })
-    .catch((err) => console.log(`${err}`.red));
+    .catch((err) => {
+      console.log(`${err}`.red);
+      connection();
+    });
 };
 
 const createDocument = () => {
@@ -88,8 +95,10 @@ const updateDocument = (data) => {
         message: "[New Data] # ",
       },
     ])
-    .then(async(answers) => {
-      const myData = await mySchemaData.findByIdAndUpdate(data,{data:answers.data});
+    .then(async (answers) => {
+      const myData = await mySchemaData.findByIdAndUpdate(data, {
+        data: answers.data,
+      });
       console.log(`${myData}`.yellow);
       console.log("Data updated".yellow);
     });
@@ -107,13 +116,32 @@ const deleteDocument = async (data) => {
   console.log("Data deleted".yellow);
 };
 
-program
-  .name("index.js i | u | g | d | ")
-  .description("CLI to store data")
-  .version("1.1.0");
+const search = async (data) => {
+  inquirer
+    .prompt([
+      {
+        name: "data",
+        message: "[Query] # ",
+      },
+    ])
+    .then(async (answers) => {
+      const myData = await mySchemaData.findOne({ data });
+      if(myData===null){
+        console.log("[0] results found".red);
+      }else{
+        console.log(`${myData}`.yellow);
+        console.log(`[${myData.length}] results found`.green);
+      }
+    });
+};
 
 program
-  .command("connect")
+  .name("zinc c | i | u | g | d | s | ")
+  .description("Zinc CLI to store data for shubham")
+  .version("3.0.0");
+
+program
+  .command("c")
   .description("Connect to the server.")
   .action(() => {
     connection();
@@ -158,6 +186,14 @@ program
   .description("Quoteof the day.")
   .action(() => {
     quoteFunc();
+  });
+
+program
+  .command("s")
+  .description("Search  data from db.")
+  .action(() => {
+    connection();
+    search();
   });
 
 program.parse();
