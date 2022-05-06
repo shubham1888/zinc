@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 const mongoose = require("mongoose");
+const express = require("express");
 const colors = require("colors");
 const inquirer = require("inquirer");
 const { Command } = require("commander");
 const program = new Command();
+
+const app = express();
+const port = 3000;
 // https://api.imgflip.com/get_memes
 // https://weatherdbi.herokuapp.com/data/weather/nepal
 let newDate = new Date();
@@ -35,10 +39,7 @@ const welcome = () => {
   console.log(colors.green(" /____________|          |__|     \\__|__|   "));
   console.log("");
   console.log("");
-  console.log("");
-  console.log("");
-  console.log("");
-  console.log("");
+  console.log(colors.red("-----------------------------------------"));
   console.log("");
 };
 
@@ -69,12 +70,10 @@ const quoteFunc = () => {
 };
 
 const connection = () => {
-  // Replace the following with your Atlas connection string
+  expressServer();
   const conString =
     "mongodb+srv://shubham:pymongo@cluster0.xsd2e.mongodb.net/test?retryWrites=true&w=majority";
-
   console.log(colors.yellow("Connecting to server..."));
-
   mongoose
     .connect(conString)
     .then(() => {
@@ -85,6 +84,31 @@ const connection = () => {
       connection();
     });
 };
+
+function expressServer() {
+  app.use(express.json());
+  app.get("/", async (req, res) => {
+    try {
+      const myJson = await mySchemaData.find();
+      res.json(myJson);
+    } catch (error) {
+      console.log(colors.red(error));
+    }
+  });
+  app.get("/:id", async (req, res) => {
+    try {
+      // console.log(typeof(req.params.id));
+      const myJson = await mySchemaData.findById({ _id: req.params.id });
+      res.json(myJson);
+    } catch (error) {
+      console.log(colors.red(error));
+    }
+  });
+  app.listen(port, () => {
+    console.log(colors.green(`Server running at port ${port}`));
+  });
+  // process.exit(1);
+}
 
 const createDocument = () => {
   inquirer
@@ -131,7 +155,7 @@ const readDocument = async () => {
   const myData = await mySchemaData.find();
   console.log(colors.yellow(`${myData}`));
   console.log(colors.green(`[${myData.length}] results found`));
-  process.exit(1);
+  // process.exit(1);
 };
 
 const deleteDocument = async (data) => {
@@ -160,8 +184,52 @@ const search = async (data) => {
     });
 };
 
+const options = () => {
+  inquirer
+    .prompt([
+      {
+        type: "list",
+        name: "data",
+        message: "Choose # ",
+        choices: ["[1] Save a file", "[2] Save a File by [Text Editor]"],
+      },
+    ])
+    .then((answers) => {
+      const data = answers.data;
+      const charAtData = data.charAt(1);
+      if (charAtData == 1) {
+        process.exit(1);
+      } else if (charAtData == 2) {
+        inquirer
+          .prompt([
+            {
+              type: "editor",
+              name: "content",
+              message: "Content # ",
+            },
+          ])
+          .then(async (answers) => {
+            const content = answers.content;
+            if (content === "") {
+              console.log("Empty Field");
+            } else {
+              connection();
+              const myData = new mySchemaData({
+                data: content,
+                date: currentDateTime,
+              });
+              await myData.save();
+            }
+          });
+      } else {
+        console.log("Invalid operation");
+        process.exit(1);
+      }
+    });
+};
+
 program
-  .name("zinc c | i | u | g | d | q | s | w | ")
+  .name("zinc c | i | u | g | d | q | s | w | o | ")
   .description("Zinc CLI to store data for shubham")
   .version("3.0.0");
 
@@ -233,6 +301,14 @@ program
   .description("Welcome screen")
   .action(() => {
     welcome();
+  });
+
+program
+  .command("o")
+  .description("Multiple options")
+  .action(() => {
+    welcome();
+    options();
   });
 
 program.parse();

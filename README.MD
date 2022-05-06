@@ -1,1 +1,1 @@
-A simple zinc cli for shubham by shubham for shubham.
+A simple node cli [zinc] by shubham.
