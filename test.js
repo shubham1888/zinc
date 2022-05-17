@@ -41,3 +41,9 @@
 //   .then(answers => {
 //     console.info('Answer:', answers.story);
 //   });
+
+const os = require('os');
+setTimeout(() => {
+    
+    console.log(os.platform());
+}, 6000);

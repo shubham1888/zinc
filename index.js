@@ -4,6 +4,7 @@ const express = require("express");
 const colors = require("colors");
 const inquirer = require("inquirer");
 const { Command } = require("commander");
+const os = require("os");
 const program = new Command();
 
 const app = express();
@@ -71,17 +72,34 @@ const quoteFunc = () => {
 
 const connection = () => {
   expressServer();
-  const conString =
-    "mongodb+srv://shubham:pymongo@cluster0.xsd2e.mongodb.net/test?retryWrites=true&w=majority";
-  console.log(colors.yellow("Connecting to server..."));
-  mongoose
-    .connect(conString)
-    .then(() => {
-      console.log(colors.yellow("Connnection successful"));
-    })
-    .catch((err) => {
-      console.log(colors.red(err));
-      connection();
+  inquirer
+    .prompt([
+      {
+        type: os.platform() == "win32" || "linux" ? "list" : "rawlist",
+        name: "dbname",
+        message: "",
+        choices: ["[1]Connect to local DB", "[2]Connect to remote DB"]
+      },
+    ])
+    .then((answers) => {
+      const data = answers.dbname;
+      const charAtData = data.charAt(1);
+      if (charAtData == 1) {
+        var conString = "mongodb://localhost:27017";
+      }else if(charAtData == 2){
+        var conString =
+          "mongodb+srv://shubham:pymongo@cluster0.xsd2e.mongodb.net/test?retryWrites=true&w=majority";
+      }
+      console.log(colors.yellow("Connecting to server..."));
+      mongoose
+        .connect(conString)
+        .then(() => {
+          console.log(colors.yellow("Connnection successful"));
+        })
+        .catch((err) => {
+          console.log(colors.red(err));
+          connection();
+        });
     });
 };
 
@@ -106,6 +124,7 @@ function expressServer() {
   });
   app.listen(port, () => {
     console.log(colors.green(`Server running at port ${port}`));
+    console.log(colors.yellow.underline(`http://localhost:${port}/`));
   });
   // process.exit(1);
 }
@@ -120,16 +139,21 @@ const createDocument = () => {
     ])
     .then((answers) => {
       let data = answers.data;
-      const myData = new mySchemaData({ data, date: currentDateTime });
-      myData
-        .save()
-        .then(() => {
-          console.log(colors.green("Data saved successfully"));
-          process.exit(1);
-        })
-        .catch((err) => {
-          console.log(colors.red(err));
-        });
+      if(data){
+        const myData = new mySchemaData({ data, date: currentDateTime });
+        myData
+          .save()
+          .then(() => {
+            console.log(colors.green("Data saved successfully"));
+            process.exit(1);
+          })
+          .catch((err) => {
+            console.log(colors.red(err));
+          });
+      }else{
+        console.log("Please fill data");
+        createDocument();
+      }
     });
 };
 
@@ -153,7 +177,14 @@ const updateDocument = (data) => {
 
 const readDocument = async () => {
   const myData = await mySchemaData.find();
-  console.log(colors.yellow(`${myData}`));
+  for (let index = 0; index < myData.length; index++) {
+    const data = myData[index];
+    console.log(colors.yellow(`[${index}] # ${data._id}`));
+    console.log(colors.yellow(`[Date] # ${data.date}`));
+    console.log(colors.yellow(`--# ${data.data}`));
+    console.log(colors.red("----------------------------"));
+    console.log("");
+  }
   console.log(colors.green(`[${myData.length}] results found`));
   // process.exit(1);
 };
@@ -184,21 +215,62 @@ const search = async (data) => {
     });
 };
 
+const migrateData = async () => {
+  const conString = "mongodb://localhost:27017";
+  console.log(colors.yellow("Connecting to local server..."));
+  mongoose
+    .connect(conString)
+    .then(() => {
+      console.log(colors.yellow("Connnection successful"));
+    })
+    .catch((err) => {
+      console.log(colors.red(err));
+    });
+  const localData = await mySchemaData.find();
+  console.log(localData);
+  console.log(colors.red("It may take time..."));
+  setTimeout(async () => {
+    await mongoose.disconnect();
+    setTimeout(() => {
+      connection();
+      setTimeout(() => {
+        for (let index = 0; index < localData.length; index++) {
+          const data = localData[index];
+          const newData = new mySchemaData({
+            _id: data._id,
+            data: data.data,
+            date: data.date,
+          });
+          newData.save();
+        }
+        console.log(colors.green("Successfully data migrated"));
+        setTimeout(async() => {
+          await mongoose.disconnect();
+        }, 5000);
+        process.exit(1);
+      }, 10000);
+    }, 5000);
+  }, 5000);
+};
+
 const options = () => {
   inquirer
     .prompt([
       {
-        type: "list",
+        type: os.platform() == "win32" || "linux" ? "list" : "rawlist",
         name: "data",
         message: "Choose # ",
-        choices: ["[1] Save a file", "[2] Save a File by [Text Editor]"],
+        choices: [
+          "[1] Migrate data from local to remote DB",
+          "[2] Save a File by [Text Editor]",
+        ],
       },
     ])
     .then((answers) => {
       const data = answers.data;
       const charAtData = data.charAt(1);
       if (charAtData == 1) {
-        process.exit(1);
+        migrateData();
       } else if (charAtData == 2) {
         inquirer
           .prompt([
@@ -229,7 +301,7 @@ const options = () => {
 };
 
 program
-  .name("zinc c | i | u | g | d | q | s | w | o | ")
+  .name("zinc c | i | u | g | d | q | s | w | o | m |")
   .description("Zinc CLI to store data for shubham")
   .version("3.0.0");
 
@@ -309,6 +381,14 @@ program
   .action(() => {
     welcome();
     options();
+  });
+
+program
+  .command("m")
+  .description("Migrate data from local to remote DB")
+  .action(() => {
+    welcome();
+    migrateData();
   });
 
 program.parse();

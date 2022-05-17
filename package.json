@@ -1,6 +1,6 @@
 {
   "name": "@shubham8888/zinc",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "A simple zinc cli for shubham by shubham.",
   "main": "index.js",
   "preferGlobal": true,

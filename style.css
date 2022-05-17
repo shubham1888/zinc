@@ -1,0 +1,75 @@
+*{
+    margin: 0px;
+    padding: 0px;
+    box-sizing: border-box;
+    background-color: #282A35;
+    color: white;
+}
+header{
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+    background-color: rgb(20, 90, 20);
+}
+.zinc{
+    margin: 10px 30px;
+}
+ul{
+    display: flex;
+    justify-content: flex-end;
+    flex-direction: row;
+}
+ul li{
+    text-decoration: none;
+    list-style: none;
+}
+ul li a{
+    display: flex;
+    justify-content: flex-end;
+    margin: 0px 10px;
+    padding: 0px 10px;
+    text-decoration: none;
+    list-style: none;
+    align-items: center;
+}
+ul li a:hover{
+    color: blueviolet;
+}
+.container{
+    background-color: blueviolet;
+    width: 500px;
+    height: 500px;
+    border: 1px solid gray;
+    border-radius: 7px;
+    margin: 20px;
+    padding: 30px;
+    overflow-y: auto;
+}
+.getData{
+    background-color: blueviolet;
+    width: 400px;
+    height: 100px;
+    border: 1px solid gray;
+    border-radius: 5px;
+    margin: 10px;
+    padding: 20px;
+}
+#data{
+    background-color: gray;
+    width: 400px;
+    height: 50px;
+    border: 1px solid white;
+    border-radius: 5px;
+    margin: 10px;
+    padding: 10px;
+}
+.btn{
+    background-color: rgb(35, 158, 57);
+    width: 200px;
+    height: 20px;
+    border: 1px solid gray;
+    border-radius: 5px;
+    margin: 10px;
+    padding: 20px;
+    text-align: center;
+}
