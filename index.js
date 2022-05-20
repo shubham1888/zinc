@@ -5,7 +5,9 @@ const colors = require("colors");
 const inquirer = require("inquirer");
 const { Command } = require("commander");
 const os = require("os");
+const { download } = require("express/lib/response");
 const program = new Command();
+const fs = require("fs");
 
 const app = express();
 const port = 3000;
@@ -15,6 +17,9 @@ let newDate = new Date();
 let date = newDate.toISOString().slice(0, 10);
 let time = newDate.toLocaleTimeString();
 let currentDateTime = date + " - " + time;
+
+const conRemoteString ="mongodb+srv://shubham:pymongo@cluster0.xsd2e.mongodb.net/test?retryWrites=true&w=majority";
+const conLocalString = "mongodb://localhost:27017";
 
 const mySchema = new mongoose.Schema({
   data: {
@@ -78,7 +83,7 @@ const connection = () => {
         type: os.platform() == "win32" || "linux" ? "list" : "rawlist",
         name: "dbname",
         message: "",
-        choices: ["[1]Connect to local DB", "[2]Connect to remote DB"]
+        choices: ["[1]Connect to local DB", "[2]Connect to remote DB"],
       },
     ])
     .then((answers) => {
@@ -86,9 +91,11 @@ const connection = () => {
       const charAtData = data.charAt(1);
       if (charAtData == 1) {
         var conString = "mongodb://localhost:27017";
-      }else if(charAtData == 2){
+      } else if (charAtData == 2) {
         var conString =
           "mongodb+srv://shubham:pymongo@cluster0.xsd2e.mongodb.net/test?retryWrites=true&w=majority";
+      } else {
+        connection();
       }
       console.log(colors.yellow("Connecting to server..."));
       mongoose
@@ -139,7 +146,7 @@ const createDocument = () => {
     ])
     .then((answers) => {
       let data = answers.data;
-      if(data){
+      if (data) {
         const myData = new mySchemaData({ data, date: currentDateTime });
         myData
           .save()
@@ -150,7 +157,7 @@ const createDocument = () => {
           .catch((err) => {
             console.log(colors.red(err));
           });
-      }else{
+      } else {
         console.log("Please fill data");
         createDocument();
       }
@@ -215,6 +222,29 @@ const search = async (data) => {
     });
 };
 
+const downloadData = async () => {
+  // connection();
+  console.log(colors.yellow("Connecting to remote server..."));
+  var conString =
+    "mongodb+srv://shubham:pymongo@cluster0.xsd2e.mongodb.net/test?retryWrites=true&w=majority";
+  mongoose
+    .connect(conString)
+    .then(() => {
+      console.log(colors.yellow("Connnection successful"));
+    })
+    .catch((err) => {
+      console.log(colors.red(err));
+      downloadData();
+    });
+  const myData = await mySchemaData.find();
+  const stringData = JSON.stringify(myData);
+  // appendFile function with filename, content and callback function
+  fs.appendFile("data.json", stringData, function (err) {
+    if (err) throw err;
+    console.log(colors.green("Data downloaded successfully."));
+  });
+};
+
 const migrateData = async () => {
   const conString = "mongodb://localhost:27017";
   console.log(colors.yellow("Connecting to local server..."));
@@ -228,7 +258,7 @@ const migrateData = async () => {
     });
   const localData = await mySchemaData.find();
   console.log(localData);
-  console.log(colors.red("It may take time..."));
+  console.log(colors.red("It may take some time..."));
   setTimeout(async () => {
     await mongoose.disconnect();
     setTimeout(() => {
@@ -244,7 +274,7 @@ const migrateData = async () => {
           newData.save();
         }
         console.log(colors.green("Successfully data migrated"));
-        setTimeout(async() => {
+        setTimeout(async () => {
           await mongoose.disconnect();
         }, 5000);
         process.exit(1);
@@ -263,6 +293,7 @@ const options = () => {
         choices: [
           "[1] Migrate data from local to remote DB",
           "[2] Save a File by [Text Editor]",
+          "[3] Download data",
         ],
       },
     ])
@@ -293,9 +324,11 @@ const options = () => {
               await myData.save();
             }
           });
+      } else if (charAtData == 3) {
+        downloadData();
       } else {
         console.log("Invalid operation");
-        process.exit(1);
+        options();
       }
     });
 };
