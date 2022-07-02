@@ -1,16 +1,14 @@
 #!/usr/bin/env node
-const mongoose = require("mongoose");
 const express = require("express");
-const colors = require("colors");
+const CryptoJS = require("crypto-js");
+require('dotenv').config()
 const inquirer = require("inquirer");
+const axios = require('axios');
+const colors = require("colors");
+const conn = require('./db/connection');
 const { Command } = require("commander");
-const os = require("os");
-const { download } = require("express/lib/response");
 const program = new Command();
-const fs = require("fs");
 
-const app = express();
-const port = 3000;
 // https://api.imgflip.com/get_memes
 // https://weatherdbi.herokuapp.com/data/weather/nepal
 let newDate = new Date();
@@ -18,99 +16,9 @@ let date = newDate.toISOString().slice(0, 10);
 let time = newDate.toLocaleTimeString();
 let currentDateTime = date + " - " + time;
 
-const conRemoteString ="mongodb+srv://shubham:pymongo@cluster0.xsd2e.mongodb.net/test?retryWrites=true&w=majority";
-const conLocalString = "mongodb://localhost:27017";
-
-const mySchema = new mongoose.Schema({
-  data: {
-    type: String,
-  },
-  date: {
-    type: String,
-  },
-});
-
-const mySchemaData = mongoose.model("DATA", mySchema);
-
-const welcome = () => {
-  console.log(colors.yellow(" ____________             __          __    "));
-  console.log(colors.yellow("|________   /            |   \\       |  |  "));
-  console.log(colors.yellow("        /  /             |    \\      |  |  "));
-  console.log(colors.yellow("       /  /              |     \\     |  |  "));
-  console.log(colors.blue("      /  /               |  |\\  \\    |  |   "));
-  console.log(colors.blue("     /  /                |  | \\  \\   |  |   "));
-  console.log(colors.blue("    /  /                 |  |  \\  \\  |  |   "));
-  console.log(colors.green("   /  /                  |  |   \\  \\ |  |  "));
-  console.log(colors.green("  /  /________           |  |    \\   |  |   "));
-  console.log(colors.green(" /____________|          |__|     \\__|__|   "));
-  console.log("");
-  console.log("");
-  console.log(colors.red("-----------------------------------------"));
-  console.log("");
-};
-
-const quoteFunc = () => {
-  const axios = require("axios");
-  const url = "https://quotes.rest/qod";
-  // make a get request to the url
-  axios({
-    method: "get",
-    url: url,
-    headers: { Accept: "application/json" }, // this api needs this header set for the request
-  })
-    .then((res) => {
-      const quote = res.data.contents.quotes[0].quote;
-      const author = res.data.contents.quotes[0].author;
-      const title = res.data.contents.quotes[0].title;
-      const category = res.data.contents.quotes[0].category;
-      console.log(colors.green(`[Title] # ${title}`));
-      console.log(colors.green(`[Category] # ${category}`));
-      console.log(colors.green(`[Author] # ${author}`));
-      console.log(colors.yellow(`${quote}`));
-      process.exit(1);
-    })
-    .catch((err) => {
-      const log = console.log(err);
-      console.log(colors.green(log));
-    });
-};
-
-const connection = () => {
-  expressServer();
-  inquirer
-    .prompt([
-      {
-        type: os.platform() == "win32" || "linux" ? "list" : "rawlist",
-        name: "dbname",
-        message: "",
-        choices: ["[1]Connect to local DB", "[2]Connect to remote DB"],
-      },
-    ])
-    .then((answers) => {
-      const data = answers.dbname;
-      const charAtData = data.charAt(1);
-      if (charAtData == 1) {
-        var conString = "mongodb://localhost:27017";
-      } else if (charAtData == 2) {
-        var conString =
-          "mongodb+srv://shubham:pymongo@cluster0.xsd2e.mongodb.net/test?retryWrites=true&w=majority";
-      } else {
-        connection();
-      }
-      console.log(colors.yellow("Connecting to server..."));
-      mongoose
-        .connect(conString)
-        .then(() => {
-          console.log(colors.yellow("Connnection successful"));
-        })
-        .catch((err) => {
-          console.log(colors.red(err));
-          connection();
-        });
-    });
-};
-
 function expressServer() {
+  const app = express();
+  const port = 3000;
   app.use(express.json());
   app.get("/", async (req, res) => {
     try {
@@ -136,222 +44,125 @@ function expressServer() {
   // process.exit(1);
 }
 
-const createDocument = () => {
-  inquirer
+const createDocument = async () => {
+  const ans = await inquirer
     .prompt([
       {
         name: "data",
         message: "[Data] # ",
       },
-    ])
-    .then((answers) => {
-      let data = answers.data;
-      if (data) {
-        const myData = new mySchemaData({ data, date: currentDateTime });
-        myData
-          .save()
-          .then(() => {
-            console.log(colors.green("Data saved successfully"));
-            process.exit(1);
-          })
-          .catch((err) => {
-            console.log(colors.red(err));
-          });
-      } else {
-        console.log("Please fill data");
-        createDocument();
-      }
-    });
+    ]);
+  conn(ans.data, "data");
+  console.log(colors.green("Data stored successfully"));
 };
 
-const updateDocument = (data) => {
-  inquirer
-    .prompt([
-      {
-        name: "data",
-        message: "[New Data] # ",
-      },
-    ])
-    .then(async (answers) => {
-      const myData = await mySchemaData.findByIdAndUpdate(data, {
-        data: answers.data,
-      });
-      console.log(colors.yellow(myData));
-      console.log(colors.yellow("Data updated"));
-      process.exit(1);
-    });
-};
-
-const readDocument = async () => {
-  const myData = await mySchemaData.find();
-  for (let index = 0; index < myData.length; index++) {
-    const data = myData[index];
-    console.log(colors.yellow(`[${index}] # ${data._id}`));
-    console.log(colors.yellow(`[Date] # ${data.date}`));
-    console.log(colors.yellow(`--# ${data.data}`));
-    console.log(colors.red("----------------------------"));
-    console.log("");
+const readDocument = async (table) => {
+  try {
+    const res = await axios.get(`https://zinc-d8bea-default-rtdb.firebaseio.com/${table}.json`);
+    if (res) {
+      console.log(colors.yellow(res.data));
+    } else {
+      console.log(colors.red('Error'));
+    }
+  } catch (error) {
+    console.error(error);
   }
-  console.log(colors.green(`[${myData.length}] results found`));
-  // process.exit(1);
 };
 
-const deleteDocument = async (data) => {
-  const myData = await mySchemaData.findByIdAndDelete(data);
-  console.log(colors.yellow(myData));
-  console.log(colors.yellow("Data deleted"));
-  process.exit(1);
-};
-
-const search = async (data) => {
-  inquirer
+const login = async (table) => {
+  console.log(colors.yellow("Login"));
+  const username = await inquirer
     .prompt([
       {
-        name: "data",
-        message: "[Query] # ",
+        name: "username",
+        message: "[Username] # ",
       },
-    ])
-    .then(async (answers) => {
-      const myData = await mySchemaData.findById({ _id: answers.data });
-      if (myData === null) {
-        console.log(colors.red("[0] results found"));
-      } else {
-        console.log(colors.yellow(myData));
-        process.exit(1);
-      }
-    });
-};
-
-const downloadData = async () => {
-  // connection();
-  console.log(colors.yellow("Connecting to remote server..."));
-  var conString =
-    "mongodb+srv://shubham:pymongo@cluster0.xsd2e.mongodb.net/test?retryWrites=true&w=majority";
-  mongoose
-    .connect(conString)
-    .then(() => {
-      console.log(colors.yellow("Connnection successful"));
-    })
-    .catch((err) => {
-      console.log(colors.red(err));
-      downloadData();
-    });
-  const myData = await mySchemaData.find();
-  const stringData = JSON.stringify(myData);
-  // appendFile function with filename, content and callback function
-  fs.appendFile("data.json", stringData, function (err) {
-    if (err) throw err;
-    console.log(colors.green("Data downloaded successfully."));
-  });
-};
-
-const migrateData = async () => {
-  const conString = "mongodb://localhost:27017";
-  console.log(colors.yellow("Connecting to local server..."));
-  mongoose
-    .connect(conString)
-    .then(() => {
-      console.log(colors.yellow("Connnection successful"));
-    })
-    .catch((err) => {
-      console.log(colors.red(err));
-    });
-  const localData = await mySchemaData.find();
-  console.log(localData);
-  console.log(colors.red("It may take some time..."));
-  setTimeout(async () => {
-    await mongoose.disconnect();
-    setTimeout(() => {
-      connection();
-      setTimeout(() => {
-        for (let index = 0; index < localData.length; index++) {
-          const data = localData[index];
-          const newData = new mySchemaData({
-            _id: data._id,
-            data: data.data,
-            date: data.date,
-          });
-          newData.save();
+    ]);
+  const password = await inquirer
+    .prompt([
+      {
+        name: "password",
+        message: "[Password] # ",
+      },
+    ]);
+  if (username.username && password.password) {
+    try {
+      const res = await axios.get(`https://zinc-d8bea-default-rtdb.firebaseio.com/${table}.json`);
+      if (res) {
+        let loginFlaf = 0;
+        for (let i = 0; i < Object.values(res.data).length; i++) {
+          // Decrypt
+          // Last_Login
+          // put
+          const decryptedpassword = CryptoJS.AES.decrypt(Object.values(res.data)[i].data.password, process.env.SECRET_KEY);
+          const originalPassword = decryptedpassword.toString(CryptoJS.enc.Utf8);
+          if (Object.values(res.data)[i].data.username === username.username && originalPassword === password.password) {
+            loginFlaf = 1;
+            // try {
+            //   const resToUpdate = await axios.patch(`https://zinc-d8bea-default-rtdb.firebaseio.com/${table}.json`, {
+            //     Last_Login: currentDateTime
+            //   });
+            // } catch (error) {
+            //   console.error(error);
+            // }
+            console.log(colors.yellow(`Login as ${Object.values(res.data)[i].data.username}`))
+          }
         }
-        console.log(colors.green("Successfully data migrated"));
-        setTimeout(async () => {
-          await mongoose.disconnect();
-        }, 5000);
-        process.exit(1);
-      }, 10000);
-    }, 5000);
-  }, 5000);
-};
+        if (loginFlaf === 0) {
+          console.log(colors.red("Invalid credentials!"));
+          login("users");
+        }
+      } else {
+        console.log(colors.red('Error'));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  } else {
+    console.log(colors.red("Enter username and password"));
+    signup();
+  }
+}
 
-const options = () => {
-  inquirer
+const signup = async () => {
+  console.log(colors.yellow("Signup"));
+  const username = await inquirer
     .prompt([
       {
-        type: os.platform() == "win32" || "linux" ? "list" : "rawlist",
-        name: "data",
-        message: "Choose # ",
-        choices: [
-          "[1] Migrate data from local to remote DB",
-          "[2] Save a File by [Text Editor]",
-          "[3] Download data",
-        ],
+        name: "username",
+        message: "[Username] # ",
       },
-    ])
-    .then((answers) => {
-      const data = answers.data;
-      const charAtData = data.charAt(1);
-      if (charAtData == 1) {
-        migrateData();
-      } else if (charAtData == 2) {
-        inquirer
-          .prompt([
-            {
-              type: "editor",
-              name: "content",
-              message: "Content # ",
-            },
-          ])
-          .then(async (answers) => {
-            const content = answers.content;
-            if (content === "") {
-              console.log("Empty Field");
-            } else {
-              connection();
-              const myData = new mySchemaData({
-                data: content,
-                date: currentDateTime,
-              });
-              await myData.save();
-            }
-          });
-      } else if (charAtData == 3) {
-        downloadData();
-      } else {
-        console.log("Invalid operation");
-        options();
-      }
-    });
-};
+    ]);
+  const password = await inquirer
+    .prompt([
+      {
+        name: "password",
+        message: "[Password] # ",
+      },
+    ]);
+  // Encrypting Password
+  // console.log(process.env.SECRET_KEY)
+  const encryptedPassword = CryptoJS.AES.encrypt(password.password, process.env.SECRET_KEY).toString();
+  let data = {
+    username: username.username,
+    password: encryptedPassword,
+    Joined_Date: currentDateTime,
+    Last_Login: currentDateTime
+  }
+  conn(data, "users");
+  console.log(colors.green("User added"));
+  login("users");
+}
 
 program
-  .name("zinc c | i | u | g | d | q | s | w | o | m |")
+  .name("zinc i | u | g | d ")
   .description("Zinc CLI to store data for shubham")
   .version("3.0.0");
-
-program
-  .command("c")
-  .description("Connect to the server.")
-  .action(() => {
-    welcome();
-    connection();
-  });
 
 program
   .command("i")
   .description("Insert data to the server.")
   .action(() => {
-    welcome();
-    connection();
     createDocument();
   });
 
@@ -360,8 +171,6 @@ program
   .description("Insert data to the server.")
   .argument("<string>", "string of id")
   .action((str) => {
-    welcome();
-    connection();
     updateDocument(str);
   });
 
@@ -369,9 +178,7 @@ program
   .command("g")
   .description("Get data from the server.")
   .action(() => {
-    welcome();
-    connection();
-    readDocument();
+    readDocument("users");
   });
 
 program
@@ -379,49 +186,21 @@ program
   .description("Delete data to the server.")
   .argument("<string>", "string of id")
   .action((str) => {
-    welcome();
-    connection();
     deleteDocument(str);
   });
 
 program
-  .command("q")
-  .description("Quoteof the day.")
-  .action(() => {
-    welcome();
-    quoteFunc();
-  });
-
-program
   .command("s")
-  .description("Search  data from db by id.")
+  .description("Signup")
   .action(() => {
-    welcome();
-    connection();
-    search();
+    signup();
   });
 
 program
-  .command("w")
-  .description("Welcome screen")
+  .command("l")
+  .description("users")
   .action(() => {
-    welcome();
-  });
-
-program
-  .command("o")
-  .description("Multiple options")
-  .action(() => {
-    welcome();
-    options();
-  });
-
-program
-  .command("m")
-  .description("Migrate data from local to remote DB")
-  .action(() => {
-    welcome();
-    migrateData();
+    login("users");
   });
 
 program.parse();

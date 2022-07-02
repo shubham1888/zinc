@@ -1,49 +1,24 @@
-// const inquirer = require('inquirer');
+// const conn = require('./db/connection');
+// let data = {
+//   username: "ram",
+//   password: "pass123",
+//   email: "ramemail123"
+// }
+// conn(data,"signup");
+// const inquirer = require("inquirer");
 
-// inquirer
-//   .prompt([
-//     {
-//       type: 'list',
-//       name: 'reptile',
-//       message: 'Which is better?',
-//       choices: ['alligator', 'crocodile'],
-//     },
-//   ])
-//   .then(answers => {
-//     console.info('Answer:', answers.reptile);
-//   });
 
-// const inquirer = require('inquirer');
 
-// inquirer
-//   .prompt([
-//     {
-//       type: 'password',
-//       name: 'secret',
-//       message: 'Tell me a secret',
-//     },
-//   ])
-//   .then(answers => {
-//     // Displaying the password for debug purposes only.
-//     console.info('Answer:', answers.secret);
-//   });
 
-// const inquirer = require('inquirer');
 
-// inquirer
-//   .prompt([
-//     {
-//       type: 'editor',
-//       name: 'story',
-//       message: 'Tell me a story, a really long one!',
-//     },
-//   ])
-//   .then(answers => {
-//     console.info('Answer:', answers.story);
-//   });
+const CryptoJS = require("crypto-js");
 
-const os = require('os');
-setTimeout(() => {
-    
-    console.log(os.platform());
-}, 6000);
+// Encrypt
+const encryptedPassword = CryptoJS.AES.encrypt('password', 'secret key 123').toString();
+console.log(encryptedPassword); // 'my message'
+
+// Decrypt
+const decryptedpassword = CryptoJS.AES.decrypt(encryptedPassword, 'secret key 123');
+const originalPassword = decryptedpassword.toString(CryptoJS.enc.Utf8);
+
+console.log(originalPassword); // 'my message'
